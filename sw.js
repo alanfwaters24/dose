@@ -2,7 +2,7 @@
 // Purpose: (1) let the app be installed as a standalone PWA, (2) allow
 // showNotification to surface reminders even when the tab isn't focused
 // (as long as the browser process is still running).
-const CACHE_NAME = 'dose-v1.5.0';
+const CACHE_NAME = 'dose-v1.6.0';
 const ASSETS = ['index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (event) => {

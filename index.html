@@ -262,7 +262,7 @@
 <script>
 (function(){
 "use strict";
-const BUILD_VERSION = "DOSE v1.5.0";
+const BUILD_VERSION = "DOSE v1.6.0";
 const STORE_KEY = "dose_v1_data";
 
 /* ---------- content pools ---------- */
@@ -450,7 +450,7 @@ function checkDayCompletionAndCelebrate(){
   if (streak > 0 && streak % 30 === 0 && streak !== state.lastMonthlyStreak){ kind = "month"; state.lastMonthlyStreak = streak; }
   else if (streak > 0 && streak % 7 === 0 && streak !== state.lastWeeklyStreak){ kind = "week"; state.lastWeeklyStreak = streak; }
   save();
-  showToast(celebrationMessage(kind));
+  showCelebrationModal(celebrationMessage(kind), kind);
 }
 
 function effectiveReorderUrl(med){
@@ -538,6 +538,20 @@ function showToast(msg){
   setTimeout(()=> el.remove(), 4200);
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---------- celebration modal (stays until dismissed, unlike the toast) ---------- */
+function showCelebrationModal(message, kind){
+  const heading = kind === "month" ? "30-day streak" : kind === "week" ? "7-day streak" : "Day complete";
+  const root = document.getElementById("modalRoot");
+  root.innerHTML =
+    '<div class="modal-back" id="modalBack"><div class="modal" style="text-align:center;">' +
+      '<div style="font-family:var(--disp); font-weight:800; font-size:12.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--teal);">'+escapeHtml(heading)+'</div>' +
+      '<div style="font-size:18px; line-height:1.55; margin:16px 0 24px; font-family:var(--disp); font-weight:600;">'+escapeHtml(message)+'</div>' +
+      '<button class="btn primary" id="celebrateOk" style="width:100%;">Nice one</button>' +
+    '</div></div>';
+  document.getElementById("celebrateOk").onclick = closeModal;
+  document.getElementById("modalBack").onclick = (e)=>{ if (e.target.id==="modalBack") closeModal(); };
+}
 
 /* ---------- rendering ---------- */
 let activeTab = "today";

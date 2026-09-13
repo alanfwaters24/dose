@@ -1,0 +1,933 @@
+<title>DOSE</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#05100D">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap">
+
+<style>
+  :root{
+    --bg:#05100D;
+    --teal:#2DE2C8;
+    --teal-dim:#1B8F7C;
+    --violet:#8B5CF6;
+    --violet-dim:#5B3FA6;
+    --ink:#EAF6F2;
+    --ink-dim:#9FB8B0;
+    --ink-faint:#6C837C;
+    --danger:#FF6B6B;
+    --warn:#F5C36B;
+    --good:#4EE0A6;
+    --glass-top:rgba(255,255,255,.09);
+    --glass-bot:rgba(255,255,255,.03);
+    --border:rgba(255,255,255,.10);
+    --radius:20px;
+    --disp:'Exo 2', ui-sans-serif, system-ui, sans-serif;
+    --ui:'Rajdhani', ui-sans-serif, system-ui, sans-serif;
+    --mono:'Share Tech Mono', ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--ui);
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  .glow{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(60vmax 60vmax at -10% -10%, rgba(45,226,200,.20), transparent 60%),
+      radial-gradient(70vmax 70vmax at 110% 20%, rgba(139,92,246,.16), transparent 60%),
+      radial-gradient(50vmax 50vmax at 50% 120%, rgba(45,226,200,.10), transparent 60%);
+  }
+  .app{ position:relative; z-index:1; max-width:920px; margin:0 auto; padding:18px 16px calc(92px + env(safe-area-inset-bottom)); min-height:100vh;}
+
+  header.top{ display:flex; flex-direction:column; gap:10px; padding-block:6px 14px;}
+  .top-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
+  .brand{ font-family:var(--disp); font-weight:800; font-size:13px; letter-spacing:.28em; color:var(--teal); text-transform:uppercase;}
+  .greeting{ font-family:var(--disp); font-weight:700; font-size:26px; margin:2px 0 0; text-wrap:balance;}
+  .date{ color:var(--ink-dim); font-size:14px; letter-spacing:.02em;}
+  .streak-chip{
+    display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px;
+    background:linear-gradient(180deg,var(--glass-top),var(--glass-bot));
+    border:1px solid var(--border); backdrop-filter:blur(18px) saturate(160%);
+    white-space:nowrap; flex-shrink:0;
+  }
+  .streak-chip .n{ font-family:var(--mono); font-size:18px; color:var(--teal); font-variant-numeric:tabular-nums;}
+  .streak-chip .l{ font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.08em;}
+
+  /* glass card w/ animated iridescent ring */
+  .card{
+    position:relative; border-radius:var(--radius); padding:16px;
+    background:linear-gradient(180deg,var(--glass-top),var(--glass-bot));
+    backdrop-filter:blur(24px) saturate(160%);
+    -webkit-backdrop-filter:blur(24px) saturate(160%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 10px 30px -18px rgba(0,0,0,.7);
+    isolation:isolate;
+  }
+  .card::before{
+    content:''; position:absolute; inset:-1px; border-radius:inherit; padding:1px; z-index:-1;
+    background:conic-gradient(from var(--ang,0deg), var(--teal), var(--violet), var(--teal-dim), var(--violet-dim), var(--teal));
+    -webkit-mask:linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity:.55;
+    animation: ring 7s linear infinite;
+    animation-delay: var(--ring-delay, 0s);
+  }
+  @keyframes ring{ to{ --ang:360deg; } }
+  @property --ang{ syntax:'<angle>'; inherits:true; initial-value:0deg; }
+  .card.flat::before{ display:none; }
+  @media (prefers-reduced-motion: reduce){ .card::before{ animation:none; } }
+  .card:active{ transform:translateY(1px); }
+  @media (hover:hover){
+    .card.hoverable:hover{ transform:translateY(-2px); box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 16px 34px -16px rgba(45,226,200,.35);}
+  }
+  .card.hoverable{ transition:transform .18s ease, box-shadow .18s ease; }
+
+  .grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  @media (min-width:640px){ .grid.cols-2{ grid-template-columns:1fr 1fr; } }
+  @media (min-width:900px){ .grid.cols-12{ grid-template-columns:repeat(12,1fr); } .grid.cols-12 > .span-6{grid-column:span 6;} .grid.cols-12 > .span-4{grid-column:span 4;} .grid.cols-12 > .span-12{grid-column:span 12;} }
+
+  .section-label{ font-family:var(--disp); font-weight:700; font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim); margin:22px 0 10px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .section-label:first-child{ margin-top:4px; }
+
+  .dose-row{ display:flex; align-items:center; gap:12px; }
+  .pill-swatch{ width:38px; height:38px; border-radius:12px; flex-shrink:0; position:relative; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.16), 0 4px 10px -4px rgba(0,0,0,.6); border:1px solid var(--border);}
+  .pill-swatch svg{ width:22px; height:22px; overflow:visible; }
+  .shape-swatch{ width:38px; height:38px; border-radius:10px; border:2px solid var(--border); background:rgba(255,255,255,.04); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-dim); }
+  .shape-swatch svg{ width:20px; height:20px; overflow:visible; }
+  .shape-swatch.sel{ border-color:var(--teal); color:var(--teal); background:rgba(45,226,200,.12); }
+  .icon-preview{ display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-dim); margin:-4px 0 14px; }
+  .med-name{ font-family:var(--disp); font-weight:700; font-size:16px; line-height:1.2;}
+  .med-sub{ color:var(--ink-dim); font-size:13px; margin-top:2px; }
+  .dose-time{ font-family:var(--mono); font-size:14px; color:var(--ink-dim); flex-shrink:0; text-align:right; min-width:56px;}
+  .dose-time.overdue{ color:var(--danger); }
+  .dose-time.taken{ color:var(--good); }
+
+  .btn{ font-family:var(--ui); font-weight:600; letter-spacing:.03em; border:1px solid var(--border); background:linear-gradient(180deg,var(--glass-top),var(--glass-bot)); color:var(--ink); padding:10px 16px; border-radius:12px; cursor:pointer; backdrop-filter:blur(12px); font-size:14px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+  .btn:active{ transform:translateY(1px); }
+  .btn.primary{ background:linear-gradient(135deg,var(--teal),var(--violet)); color:#04120E; border:none; font-weight:700; }
+  .btn.ghost{ background:transparent; }
+  .btn.danger{ border-color:rgba(255,107,107,.4); color:var(--danger); }
+  .btn.small{ padding:7px 12px; font-size:13px; border-radius:10px; }
+  .btn.icon{ width:40px; height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; }
+  .btn[disabled]{ opacity:.45; pointer-events:none; }
+
+  .taken-check{ width:38px; height:38px; border-radius:50%; border:2px solid var(--border); background:transparent; color:var(--ink); flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .taken-check.done{ background:linear-gradient(135deg,var(--teal),var(--good)); border-color:transparent; color:#04120E; }
+  .taken-check svg{ width:18px; height:18px; }
+
+  .empty{ text-align:center; padding:40px 16px; color:var(--ink-faint); }
+  .empty .big{ font-family:var(--disp); font-size:17px; color:var(--ink-dim); margin-bottom:6px;}
+
+  nav.tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:5;
+    padding:10px max(10px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(5,16,13,0), rgba(5,16,13,.92) 30%, var(--bg));
+  }
+  .tabbar-inner{
+    max-width:920px; margin:0 auto; display:grid; grid-template-columns:repeat(5,1fr); gap:4px;
+    background:linear-gradient(180deg,var(--glass-top),var(--glass-bot)); border:1px solid var(--border);
+    backdrop-filter:blur(24px) saturate(160%); border-radius:18px; padding:6px;
+  }
+  .tab-btn{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px; border-radius:13px; background:transparent; border:none; color:var(--ink-faint); font-family:var(--ui); font-weight:600; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; cursor:pointer;}
+  .tab-btn svg{ width:20px; height:20px; }
+  .tab-btn.active{ color:var(--teal); background:rgba(45,226,200,.10); }
+
+  .badge{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; letter-spacing:.04em; padding:4px 9px; border-radius:999px; text-transform:uppercase; }
+  .badge.warn{ background:rgba(245,195,107,.14); color:var(--warn); }
+  .badge.danger{ background:rgba(255,107,107,.14); color:var(--danger); }
+  .badge.good{ background:rgba(78,224,166,.14); color:var(--good); }
+
+  .modal-back{ position:fixed; inset:0; background:rgba(2,8,6,.72); backdrop-filter:blur(4px); z-index:20; display:flex; align-items:flex-end; justify-content:center; }
+  @media (min-width:640px){ .modal-back{ align-items:center; } }
+  .modal{ width:100%; max-width:520px; max-height:88vh; overflow-y:auto; background:#0A1E19; border:1px solid var(--border); border-radius:22px 22px 0 0; padding:22px 18px calc(22px + env(safe-area-inset-bottom)); box-shadow:0 -20px 60px -20px rgba(0,0,0,.6);}
+  @media (min-width:640px){ .modal{ border-radius:22px; } }
+  .modal h2{ font-family:var(--disp); margin:0 0 16px; font-size:20px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:6px; }
+  .field input[type=text], .field input[type=number], .field input[type=time], .field select, .field textarea{
+    width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--ink);
+    padding:11px 12px; border-radius:11px; font-family:var(--ui); font-size:15px;
+  }
+  .field .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .times-list{ display:flex; flex-wrap:wrap; gap:8px; }
+  .time-chip{ display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:1px solid var(--border); padding:7px 10px; border-radius:11px; font-family:var(--mono); font-size:13px;}
+  .time-chip button{ background:none; border:none; color:var(--danger); cursor:pointer; font-size:14px; padding:0; }
+  .swatch-row{ display:flex; flex-wrap:wrap; gap:9px; }
+  .swatch{ width:34px; height:34px; border-radius:10px; border:2px solid transparent; cursor:pointer; }
+  .swatch.sel{ border-color:var(--ink); }
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .modal-actions .btn{ flex:1; text-align:center; }
+
+  .toast-wrap{ position:fixed; top:calc(16px + env(safe-area-inset-top)); left:0; right:0; z-index:40; display:flex; justify-content:center; pointer-events:none; }
+  .toast{ pointer-events:auto; max-width:420px; margin:0 16px; padding:14px 16px; border-radius:16px; background:linear-gradient(135deg, rgba(45,226,200,.20), rgba(139,92,246,.20)); border:1px solid var(--border); backdrop-filter:blur(20px); font-family:var(--ui); font-size:14.5px; box-shadow:0 14px 40px -18px rgba(0,0,0,.7); animation: toastIn .35s ease, toastOut .4s ease 3.6s forwards; }
+  @keyframes toastIn{ from{ opacity:0; transform:translateY(-14px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes toastOut{ to{ opacity:0; transform:translateY(-10px);} }
+  .toast b{ font-family:var(--disp); }
+
+  .setup-screen{ min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:24px; text-align:center; position:relative; z-index:1; }
+  .setup-screen .logo{ width:74px; height:74px; }
+  .setup-screen h1{ font-family:var(--disp); font-weight:800; letter-spacing:.06em; margin:0; font-size:26px;}
+  .setup-screen p{ color:var(--ink-dim); max-width:320px; margin:0; }
+  .setup-screen input{ width:100%; max-width:280px; text-align:center; }
+
+  .stat-tile{ text-align:center; }
+  .stat-tile .num{ font-family:var(--mono); font-size:30px; color:var(--teal); font-variant-numeric:tabular-nums; }
+  .stat-tile .lab{ font-size:12px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.08em; margin-top:2px;}
+
+  .heatmap{ display:grid; grid-template-columns:repeat(auto-fill, minmax(15px,1fr)); gap:4px; }
+  .heatcell{ aspect-ratio:1; border-radius:4px; background:rgba(255,255,255,.06); }
+  .heatcell.h1{ background:rgba(45,226,200,.30);} .heatcell.h2{ background:rgba(45,226,200,.55);} .heatcell.h3{ background:linear-gradient(135deg,var(--teal),var(--violet));}
+  .heatcell.miss{ background:rgba(255,107,107,.35); }
+
+  .switch{ position:relative; width:46px; height:26px; flex-shrink:0; }
+  .switch input{ opacity:0; width:100%; height:100%; margin:0; position:absolute; cursor:pointer; }
+  .switch .track{ position:absolute; inset:0; background:rgba(255,255,255,.12); border-radius:999px; transition:.2s; border:1px solid var(--border); }
+  .switch .knob{ position:absolute; top:2px; left:3px; width:20px; height:20px; border-radius:50%; background:var(--ink-dim); transition:.2s; }
+  .switch input:checked + .track{ background:linear-gradient(135deg,var(--teal),var(--violet)); }
+  .switch input:checked + .track .knob{ transform:translateX(19px); background:#04120E; }
+  .switch input:checked ~ .knob{ transform:translateX(19px); background:#04120E; }
+
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); }
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-row .t{ font-weight:600; }
+  .settings-row .d{ color:var(--ink-dim); font-size:12.5px; margin-top:2px; }
+
+  .list-med{ display:flex; align-items:center; gap:12px; }
+  .list-med .info{ flex:1; min-width:0; }
+  .list-med .stock{ font-family:var(--mono); font-size:13px; color:var(--ink-dim); text-align:right; }
+  .bar{ height:6px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:8px;}
+  .bar > i{ display:block; height:100%; background:linear-gradient(90deg,var(--teal),var(--violet)); }
+  .bar.low > i{ background:linear-gradient(90deg,var(--warn),var(--danger)); }
+
+  .hidden{ display:none !important; }
+  a{ color:var(--teal); }
+</style>
+
+<div class="glow"></div>
+
+<div id="setup" class="hidden">
+  <div class="setup-screen">
+    <img class="logo" src="icon-192.png" alt="">
+    <h1>DOSE</h1>
+    <p>Your medicine schedule, inventory and reorder tracker. This install is just for this phone — nothing syncs anywhere else.</p>
+    <div class="field" style="width:100%; display:flex; justify-content:center;">
+      <input id="setupName" type="text" placeholder="Whose phone is this? (e.g. Alan)" maxlength="24" />
+    </div>
+    <button class="btn primary" id="setupGo" style="width:100%; max-width:280px;">Get started</button>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <div class="brand">DOSE · ALIS</div>
+        <div class="greeting" id="greeting">Hi</div>
+        <div class="date" id="dateLine"></div>
+      </div>
+      <div class="streak-chip" id="streakChip" title="Consecutive fully-on-schedule days">
+        <span class="n" id="streakNum">0</span>
+        <span class="l">day streak</span>
+      </div>
+    </div>
+    <div id="reorderBanner" class="hidden"></div>
+  </header>
+
+  <main id="view-today"></main>
+  <main id="view-meds" class="hidden"></main>
+  <main id="view-inventory" class="hidden"></main>
+  <main id="view-progress" class="hidden"></main>
+  <main id="view-settings" class="hidden"></main>
+</div>
+
+<nav class="tabbar hidden" id="tabbar">
+  <div class="tabbar-inner">
+    <button class="tab-btn active" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Today</button>
+    <button class="tab-btn" data-tab="meds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="10" width="18" height="7" rx="3.5" transform="rotate(-25 12 12)"/></svg>Meds</button>
+    <button class="tab-btn" data-tab="inventory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/></svg>Stock</button>
+    <button class="tab-btn" data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>Progress</button>
+    <button class="tab-btn" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1Z"/></svg>Settings</button>
+  </div>
+</nav>
+
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+"use strict";
+const BUILD_VERSION = "DOSE v1.4.0";
+const STORE_KEY = "dose_v1_data";
+
+/* ---------- content pools ---------- */
+const PLAYFUL = [
+  "Dose logged. You're basically unstoppable today.",
+  "Nailed it. That pill didn't stand a chance.",
+  "On time again — your future self says thanks.",
+  "Boom. Another one ticked off the list.",
+  "Look at you, absolutely crushing this routine.",
+  "Taken and done. Gold star for you.",
+  "Consistency looks good on you.",
+  "That's the way — same time tomorrow.",
+  "You showed up for yourself today. Nice.",
+  "Small habit, solid streak. Keep going.",
+  "One more tick, one step steadier.",
+  "You vs. the schedule: you win, again.",
+];
+const QUOTES = [
+  "Well begun is half done. — Aristotle",
+  "The secret of getting ahead is getting started. — Mark Twain",
+  "Small daily improvements are the key to staggering long-term results. — unattributed",
+  "It does not matter how slowly you go as long as you do not stop. — Confucius",
+  "A journey of a thousand miles begins with a single step. — Lao Tzu",
+  "Consistency is what transforms average into excellence. — unattributed",
+  "Take care of your body, it's the only place you have to live. — Jim Rohn",
+  "What we do every day matters more than what we do once in a while. — Gretchen Rubin",
+  "Discipline is choosing between what you want now and what you want most. — unattributed",
+  "Little by little, one travels far. — J.R.R. Tolkien",
+];
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function celebrationMessage(kind){
+  if (kind === "month") return "★ 30-DAY STREAK ★  " + randomFrom(QUOTES);
+  if (kind === "week") return "✦ 7-day streak! ✦  " + (Math.random()<0.5 ? randomFrom(PLAYFUL) : randomFrom(QUOTES));
+  return Math.random() < 0.6 ? randomFrom(PLAYFUL) : randomFrom(QUOTES);
+}
+
+const SWATCHES = ["#2DE2C8","#8B5CF6","#F5C36B","#FF6B6B","#4EE0A6","#5AA9FF","#FF9F6B","#E06BD8"];
+const SHAPES = [
+  {id:"tablet", label:"Tablet"},
+  {id:"capsule", label:"Capsule"},
+  {id:"bottle", label:"Bottle"},
+  {id:"syringe", label:"Syringe"}
+];
+function medIconSvg(shape, color){
+  const c = color || "currentColor";
+  if (shape === "capsule"){
+    return '<svg viewBox="0 0 24 24"><g transform="rotate(-40 12 12)">' +
+      '<rect x="3" y="9" width="18" height="6" rx="3" fill="'+c+'"/>' +
+      '<rect x="3" y="9" width="9" height="6" rx="3" fill="#fff" opacity=".32"/>' +
+      '</g></svg>';
+  }
+  if (shape === "bottle"){
+    return '<svg viewBox="0 0 24 24">' +
+      '<rect x="9" y="2.5" width="6" height="3.2" rx="1" fill="'+c+'"/>' +
+      '<rect x="6.5" y="6" width="11" height="15.5" rx="3" fill="'+c+'" opacity=".88"/>' +
+      '<rect x="7.3" y="11.5" width="9.4" height="5.5" fill="#05100D" opacity=".28"/>' +
+      '</svg>';
+  }
+  if (shape === "syringe"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-40 12 12)">' +
+      '<rect x="2.3" y="10" width="3" height="4" rx=".6" fill="'+c+'" stroke="none"/>' +
+      '<line x1="5.3" y1="12" x2="7.5" y2="12"/>' +
+      '<rect x="7.5" y="9.3" width="9" height="5.4" rx="1.2" fill="'+c+'" fill-opacity=".22"/>' +
+      '<line x1="16.5" y1="10.6" x2="16.5" y2="13.4"/>' +
+      '<line x1="19" y1="12" x2="16.5" y2="12"/>' +
+      '<line x1="19" y1="12" x2="22.3" y2="12"/>' +
+      '</g></svg>';
+  }
+  // default: tablet
+  return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="'+c+'"/><line x1="4.2" y1="12" x2="19.8" y2="12" stroke="#05100D" stroke-opacity=".4" stroke-width="1.3"/></svg>';
+}
+
+/* ---------- state ---------- */
+let state = null;
+function defaultState(){
+  return {
+    version: 1,
+    profileName: "",
+    notifEnabled: false,
+    reminderLeadMins: 0,
+    meds: [],        // {id,name,dosageText,color,shape,timesPerDay:["08:00",...],qtyPerDose,stock,reorderThreshold,notes,active,createdAt,reorderUrl}
+    log: {},         // { "YYYY-MM-DD": { "medId|time": "taken"|"skipped" } }
+    reorderUrl: "https://www.nhs.uk/nhs-services/prescriptions/how-to-order-a-repeat-prescription/",
+    lastCelebratedDay: "",
+    lastWeeklyStreak: 0,
+    lastMonthlyStreak: 0,
+    lastCheck: 0
+  };
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    state = raw ? Object.assign(defaultState(), JSON.parse(raw)) : null;
+  }catch(e){ state = null; }
+}
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+/* ---------- date helpers ---------- */
+function pad2(n){ return n<10? "0"+n : ""+n; }
+function ymd(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function today(){ return ymd(new Date()); }
+function addDays(dStr, n){ const d = new Date(dStr+"T00:00:00"); d.setDate(d.getDate()+n); return ymd(d); }
+function timeNowStr(){ const d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
+function fmtTime(t){ const [h,m] = t.split(":").map(Number); const ap = h>=12?"PM":"AM"; let hh = h%12; if(hh===0) hh=12; return hh+":"+pad2(m)+" "+ap; }
+function fmtDateLong(){ return new Date().toLocaleDateString(undefined,{weekday:"long", month:"long", day:"numeric"}); }
+
+/* ---------- schedule / dose helpers ---------- */
+function activeMeds(){ return state.meds.filter(m=>m.active!==false); }
+function dayEntries(dateStr){
+  // returns array of {med, time} for that date, sorted by time
+  const arr = [];
+  activeMeds().forEach(m=>{
+    (m.timesPerDay||[]).forEach(t=> arr.push({med:m, time:t}));
+  });
+  arr.sort((a,b)=> a.time.localeCompare(b.time));
+  return arr;
+}
+function doseKey(medId, time){ return medId+"|"+time; }
+function doseStatus(dateStr, medId, time){
+  const day = state.log[dateStr];
+  if (day && day[doseKey(medId,time)]) return day[doseKey(medId,time)];
+  if (dateStr === today()){
+    return time <= timeNowStr() ? "due" : "upcoming";
+  }
+  return dateStr < today() ? "missed" : "upcoming";
+}
+function setDoseStatus(dateStr, medId, time, status){
+  if (!state.log[dateStr]) state.log[dateStr] = {};
+  state.log[dateStr][doseKey(medId,time)] = status;
+  save();
+}
+function markTaken(medId, time){
+  const med = state.meds.find(m=>m.id===medId);
+  if (!med) return;
+  setDoseStatus(today(), medId, time, "taken");
+  if (typeof med.stock === "number"){
+    med.stock = Math.max(0, med.stock - (med.qtyPerDose||1));
+    save();
+    if (med.reorderThreshold!=null && med.stock <= med.reorderThreshold){
+      notify("Time to reorder " + med.name, "Only " + med.stock + " left — order a new pack soon.");
+    }
+  }
+  checkDayCompletionAndCelebrate();
+  renderAll();
+}
+function undoTaken(medId, time){
+  const med = state.meds.find(m=>m.id===medId);
+  if (med && typeof med.stock === "number"){
+    med.stock = med.stock + (med.qtyPerDose||1);
+  }
+  setDoseStatus(today(), medId, time, "");
+  if (state.log[today()]) delete state.log[today()][doseKey(medId,time)];
+  save(); renderAll();
+}
+function skipDose(medId, time){ setDoseStatus(today(), medId, time, "skipped"); renderAll(); }
+
+function isDayFullyDone(dateStr){
+  const entries = dayEntries(dateStr);
+  if (!entries.length) return false;
+  return entries.every(e => {
+    const day = state.log[dateStr];
+    const st = day && day[doseKey(e.med.id, e.time)];
+    return st === "taken" || st === "skipped";
+  });
+}
+function currentStreak(){
+  let d = today();
+  // if today isn't finished yet, start counting from yesterday
+  if (!isDayFullyDone(d)) d = addDays(d, -1);
+  let n = 0;
+  while (isDayFullyDone(d)) { n++; d = addDays(d, -1); }
+  return n;
+}
+function checkDayCompletionAndCelebrate(){
+  const t = today();
+  if (!isDayFullyDone(t)) return;
+  if (state.lastCelebratedDay === t) return;
+  state.lastCelebratedDay = t;
+  const streak = currentStreak();
+  let kind = "day";
+  if (streak > 0 && streak % 30 === 0 && streak !== state.lastMonthlyStreak){ kind = "month"; state.lastMonthlyStreak = streak; }
+  else if (streak > 0 && streak % 7 === 0 && streak !== state.lastWeeklyStreak){ kind = "week"; state.lastWeeklyStreak = streak; }
+  save();
+  showToast(celebrationMessage(kind));
+}
+
+function effectiveReorderUrl(med){
+  const fallback = "https://www.nhs.uk/nhs-services/prescriptions/how-to-order-a-repeat-prescription/";
+  return (med && med.reorderUrl && med.reorderUrl.trim()) || state.reorderUrl || fallback;
+}
+function daysOfSupply(med){
+  const perDay = (med.timesPerDay||[]).length * (med.qtyPerDose||1);
+  if (!perDay) return Infinity;
+  return Math.floor((med.stock||0) / perDay);
+}
+
+/* ---------- notifications ---------- */
+let swReg = null;
+let swError = "";
+let lastNotifError = "";
+async function initSW(){
+  if (!("serviceWorker" in navigator)){ swError = "not supported in this browser view"; return; }
+  try{ swReg = await navigator.serviceWorker.register("sw.js"); }
+  catch(e){ swReg = null; swError = (e && e.message) || String(e); }
+}
+function notify(title, body){
+  try{
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    if (swReg && swReg.active){
+      swReg.active.postMessage({type:"SHOW_NOTIFICATION", payload:{title, body, tag:title}});
+    } else {
+      new Notification(title, {body, icon:"icon-192.png"});
+    }
+  }catch(e){}
+}
+async function enableNotifications(){
+  lastNotifError = "";
+  if (!("Notification" in window)){
+    lastNotifError = "window.Notification is undefined in this view";
+    showToast("This browser view doesn't support notifications. Open DOSE in Chrome using its full link (not the button in a chat) and try again.");
+    renderSettings();
+    return false;
+  }
+  if (Notification.permission === "denied"){
+    showToast("Notifications are blocked for this app. In Chrome, tap the (i) or padlock icon next to the address bar → Permissions → Notifications → Allow, then try the switch again.");
+    return false;
+  }
+  let perm;
+  try{
+    perm = await Notification.requestPermission();
+  }catch(e){
+    lastNotifError = (e && (e.name+": "+e.message)) || String(e);
+    showToast("This browser view won't allow a notification prompt. Open DOSE in Chrome using its full link (not the button in a chat) and try again.");
+    renderSettings();
+    return false;
+  }
+  state.notifEnabled = perm === "granted";
+  save();
+  if (state.notifEnabled){
+    notify("DOSE reminders are on", "We'll nudge you at dose times while the app can reach you.");
+  } else {
+    lastNotifError = "requestPermission() resolved to \"" + perm + "\" without showing an error";
+    showToast("Notifications weren't allowed, so the switch is off. You can turn them on any time from here once allowed in your browser settings.");
+  }
+  renderSettings();
+  return state.notifEnabled;
+}
+const notifiedThisSession = new Set();
+function checkDueReminders(){
+  if (!state.notifEnabled) return;
+  const nowT = timeNowStr();
+  dayEntries(today()).forEach(e=>{
+    const st = doseStatus(today(), e.med.id, e.time);
+    const key = today()+"|"+doseKey(e.med.id,e.time);
+    if ((st === "due") && !notifiedThisSession.has(key) && e.time <= nowT){
+      notifiedThisSession.add(key);
+      notify(e.med.name + " is due", (e.med.dosageText||"") + " · " + fmtTime(e.time));
+    }
+  });
+}
+
+/* ---------- toast ---------- */
+function showToast(msg){
+  const wrap = document.getElementById("toastWrap");
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.innerHTML = "<b>DOSE</b><br>" + escapeHtml(msg);
+  wrap.appendChild(el);
+  setTimeout(()=> el.remove(), 4200);
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---------- rendering ---------- */
+let activeTab = "today";
+let ringCounter = 0;
+function cardOpenTag(extra){
+  ringCounter++;
+  const delay = -(ringCounter % 7);
+  return '<div class="card hoverable'+(extra?(' '+extra):'')+'" style="--ring-delay:'+delay+'s">';
+}
+
+function renderHeader(){
+  document.getElementById("greeting").textContent = greetingText();
+  document.getElementById("dateLine").textContent = fmtDateLong();
+  document.getElementById("streakNum").textContent = currentStreak();
+  renderReorderBanner();
+}
+function greetingText(){
+  const h = new Date().getHours();
+  const name = state.profileName ? ", " + state.profileName : "";
+  const g = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return g + name;
+}
+function renderReorderBanner(){
+  const el = document.getElementById("reorderBanner");
+  const low = activeMeds().filter(m=> m.reorderThreshold!=null && (m.stock||0) <= m.reorderThreshold);
+  if (!low.length){ el.classList.add("hidden"); el.innerHTML=""; return; }
+  el.classList.remove("hidden");
+  el.innerHTML = '<div class="card" style="margin-top:12px; padding:12px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">'+
+    '<span class="badge danger">Reorder</span><span style="font-size:13.5px; flex:1; min-width:140px;">'+
+    escapeHtml(low.map(m=>m.name).join(", ")) + (low.length>1 ? " are" : " is") + ' running low</span>'+
+    '<a class="btn small primary" href="'+escapeHtml(state.reorderUrl)+'" target="_blank" rel="noopener noreferrer">Reorder</a></div>';
+}
+
+function pillIconHtml(med){
+  const tint = (med.color||"#2DE2C8") + "26";
+  return '<div class="pill-swatch" style="background:'+tint+'">' + medIconSvg(med.shape||"tablet", med.color) + '</div>';
+}
+
+function renderToday(){
+  const root = document.getElementById("view-today");
+  const entries = dayEntries(today());
+  if (!entries.length){
+    root.innerHTML = emptyBlock("No medicines scheduled yet", "Add your first medicine in the Meds tab to start today's list.");
+    return;
+  }
+  const groups = [["Morning",0,11],["Afternoon",11,17],["Evening",17,21],["Night",21,24]];
+  let html = "";
+  groups.forEach(([label,startH,endH])=>{
+    const items = entries.filter(e=>{ const h = parseInt(e.time.split(":")[0],10); return h>=startH && h<endH; });
+    if (!items.length) return;
+    html += '<div class="section-label">'+label+'</div><div class="grid">';
+    items.forEach(e=>{
+      const st = doseStatus(today(), e.med.id, e.time);
+      const timeClass = st==="taken" ? "taken" : (st==="due"||st==="missed") ? "overdue" : "";
+      html += cardOpenTag() +
+        '<div class="dose-row">' +
+          pillIconHtml(e.med) +
+          '<div style="flex:1; min-width:0;"><div class="med-name">'+escapeHtml(e.med.name)+'</div><div class="med-sub">'+escapeHtml(e.med.dosageText||"")+'</div></div>' +
+          '<div class="dose-time '+timeClass+'">'+fmtTime(e.time)+'</div>' +
+          '<button class="taken-check '+(st==="taken"?"done":"")+'" data-action="'+(st==="taken"?"undo":"take")+'" data-med="'+e.med.id+'" data-time="'+e.time+'">' +
+            (st==="taken" ? checkSvg() : "") +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += "</div>";
+  });
+  root.innerHTML = html;
+  root.querySelectorAll("[data-action=take]").forEach(b=> b.onclick = ()=> markTaken(b.dataset.med, b.dataset.time));
+  root.querySelectorAll("[data-action=undo]").forEach(b=> b.onclick = ()=> undoTaken(b.dataset.med, b.dataset.time));
+}
+function checkSvg(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L19 8"/></svg>'; }
+
+function emptyBlock(big, small){
+  return '<div class="empty">' + cardOpenTag("flat") +
+    '<div class="big">'+escapeHtml(big)+'</div><div>'+escapeHtml(small)+'</div></div></div>';
+}
+
+function renderMeds(){
+  const root = document.getElementById("view-meds");
+  let html = '<div class="section-label">Your medicines<button class="btn small primary" id="addMedBtn">+ Add medicine</button></div>';
+  if (!state.meds.length){
+    html += emptyBlock("Nothing added yet", "Tap “Add medicine” to set up your first schedule.");
+  } else {
+    html += '<div class="grid">';
+    state.meds.forEach(m=>{
+      const dos = daysOfSupply(m);
+      html += cardOpenTag() +
+        '<div class="list-med">' + pillIconHtml(m) +
+        '<div class="info"><div class="med-name">'+escapeHtml(m.name)+'</div><div class="med-sub">'+escapeHtml(m.dosageText||"")+' · '+(m.timesPerDay||[]).map(fmtTime).join(", ")+'</div></div>' +
+        '<div class="stock">'+(m.stock!=null? m.stock+" left" : "—")+'</div>' +
+        '</div>' +
+        '<div style="display:flex; gap:8px; margin-top:12px;">' +
+          '<button class="btn small" data-edit="'+m.id+'">Edit</button>' +
+          '<button class="btn small ghost" data-toggle="'+m.id+'">'+(m.active===false?"Reactivate":"Pause")+'</button>' +
+          '<button class="btn small danger" data-del="'+m.id+'" style="margin-left:auto;">Delete</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += "</div>";
+  }
+  root.innerHTML = html;
+  const addBtn = document.getElementById("addMedBtn");
+  if (addBtn) addBtn.onclick = ()=> openMedForm();
+  root.querySelectorAll("[data-edit]").forEach(b=> b.onclick = ()=> openMedForm(b.dataset.edit));
+  root.querySelectorAll("[data-del]").forEach(b=> b.onclick = ()=> deleteMed(b.dataset.del));
+  root.querySelectorAll("[data-toggle]").forEach(b=> b.onclick = ()=>{
+    const m = state.meds.find(x=>x.id===b.dataset.toggle);
+    m.active = m.active===false ? true : false;
+    save(); renderAll();
+  });
+}
+function deleteMed(id){
+  if (!confirm("Delete this medicine and its history? This can't be undone.")) return;
+  state.meds = state.meds.filter(m=>m.id!==id);
+  save(); renderAll();
+}
+
+function renderInventory(){
+  const root = document.getElementById("view-inventory");
+  const meds = activeMeds().slice().sort((a,b)=> daysOfSupply(a)-daysOfSupply(b));
+  if (!meds.length){ root.innerHTML = emptyBlock("No active medicines", "Add a medicine to track its inventory here."); return; }
+  let html = '<div class="section-label">Supply &amp; reorder</div><div class="grid">';
+  meds.forEach(m=>{
+    const dos = daysOfSupply(m);
+    const low = m.reorderThreshold!=null && (m.stock||0) <= m.reorderThreshold;
+    const pct = m.reorderThreshold!=null ? Math.min(100, Math.round(((m.stock||0) / Math.max(1,(m.reorderThreshold*3))) * 100)) : 100;
+    html += cardOpenTag() +
+      '<div class="list-med">' + pillIconHtml(m) +
+      '<div class="info"><div class="med-name">'+escapeHtml(m.name)+'</div><div class="med-sub">'+(m.stock||0)+' tablets left'+(dos!==Infinity? " · ~"+dos+" days of supply":"")+'</div></div>' +
+      (low ? '<span class="badge danger">Reorder</span>' : '<span class="badge good">OK</span>') +
+      '</div>' +
+      '<div class="bar '+(low?"low":"")+'"><i style="width:'+pct+'%"></i></div>' +
+      '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">' +
+        '<a class="btn small'+(low?" primary":"")+'" href="'+escapeHtml(effectiveReorderUrl(m))+'" target="_blank" rel="noopener noreferrer">Reorder online</a>' +
+        '<button class="btn small ghost" data-restock="'+m.id+'">Log restock</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += "</div>";
+  root.innerHTML = html;
+  root.querySelectorAll("[data-restock]").forEach(b=> b.onclick = ()=> openRestockModal(b.dataset.restock));
+}
+
+function renderProgress(){
+  const root = document.getElementById("view-progress");
+  const streak = currentStreak();
+  let taken=0, missed=0, total=0;
+  Object.keys(state.log).forEach(d=>{
+    Object.values(state.log[d]).forEach(v=>{ total++; if (v==="taken") taken++; });
+  });
+  const days = [];
+  for (let i=27;i>=0;i--){ days.push(addDays(today(), -i)); }
+  let heat = "";
+  days.forEach(d=>{
+    const entries = dayEntries(d);
+    let cls = "";
+    if (entries.length){
+      const day = state.log[d]||{};
+      const doneN = entries.filter(e=> day[doseKey(e.med.id,e.time)]==="taken").length;
+      const ratio = doneN/entries.length;
+      if (d < today() && ratio < 1 && ratio > 0) cls = "h1";
+      else if (ratio === 1) cls = entries.length>=3 ? "h3":"h2";
+      else if (d < today() && ratio === 0) cls = "miss";
+    }
+    heat += '<div class="heatcell '+cls+'" title="'+d+'"></div>';
+  });
+  root.innerHTML =
+    '<div class="grid cols-2">' +
+      cardOpenTag() + '<div class="stat-tile"><div class="num">'+streak+'</div><div class="lab">Current streak</div></div></div>' +
+      cardOpenTag() + '<div class="stat-tile"><div class="num">'+(total? Math.round(taken/total*100):0)+'%</div><div class="lab">Doses on time</div></div></div>' +
+    '</div>' +
+    '<div class="section-label">Last 28 days</div>' +
+    cardOpenTag() + '<div class="heatmap">'+heat+'</div></div>' +
+    '<div class="section-label">Milestones</div>' +
+    cardOpenTag() + '<div style="font-size:14px; color:var(--ink-dim); line-height:1.7;">Every fully-completed day earns a message on Today. Reach a 7-day streak for a bigger one, and 30 days for a monthly milestone.</div></div>';
+}
+
+function renderSettings(){
+  const root = document.getElementById("view-settings");
+  root.innerHTML =
+    cardOpenTag() +
+      '<div class="settings-row"><div><div class="t">Your name</div><div class="d">Shown in the greeting on this phone only</div></div>' +
+      '<input id="nameInput" type="text" value="'+escapeHtml(state.profileName)+'" style="width:120px; background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--ink); padding:8px 10px; border-radius:10px;"></div>' +
+      '<div class="settings-row"><div><div class="t">Dose reminders</div><div class="d">Notify me at dose times while DOSE can reach this browser</div></div>' +
+      '<label class="switch"><input type="checkbox" id="notifToggle" '+(state.notifEnabled?"checked":"")+'><span class="track"><span class="knob"></span></span></label></div>' +
+      '<div class="settings-row" style="flex-direction:column; align-items:stretch; gap:8px;"><div><div class="t">Default reorder link</div><div class="d">Opened from any low-stock reorder button unless a medicine has its own link. Defaults to the NHS page on ordering repeat prescriptions.</div></div>' +
+      '<input id="reorderUrlInput" type="text" value="'+escapeHtml(state.reorderUrl||"")+'" style="width:100%; background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--ink); padding:9px 10px; border-radius:10px;"></div>' +
+      '<div class="settings-row"><div><div class="t">Export backup</div><div class="d">Save a copy of your data as a file</div></div><button class="btn small" id="exportBtn">Export</button></div>' +
+      '<div class="settings-row"><div><div class="t">Import backup</div><div class="d">Restore from a previously exported file</div></div><label class="btn small" style="cursor:pointer;">Import<input type="file" accept="application/json" id="importFile" style="display:none;"></label></div>' +
+      '<div class="settings-row"><div><div class="t">Reset all data</div><div class="d">Erase everything stored on this phone</div></div><button class="btn small danger" id="resetBtn">Reset</button></div>' +
+    '</div>' +
+    '<div class="section-label">About</div>' +
+    cardOpenTag() + '<div style="font-size:13.5px; color:var(--ink-dim); line-height:1.7;">'+BUILD_VERSION+' · ALIS ecosystem module<br>Everything is stored only on this device — nothing leaves your phone. Reminders rely on the browser being reachable in the background; if your phone or browser fully shuts the tab down, DOSE will still catch you up with anything overdue the moment you reopen it.</div></div>' +
+    '<div class="section-label">Notification diagnostics</div>' +
+    cardOpenTag() + '<div style="font-size:12.5px; color:var(--ink-dim); line-height:1.9; font-family:var(--mono);">' +
+      'Notification API: ' + (("Notification" in window) ? "available" : "NOT available in this view") + '<br>' +
+      'Permission: ' + (("Notification" in window) ? Notification.permission : "n/a") + '<br>' +
+      'Service worker: ' + (swReg ? "registered" : ("not registered" + (swError ? " (" + escapeHtml(swError) + ")" : ""))) + '<br>' +
+      (lastNotifError ? 'Last attempt: ' + escapeHtml(lastNotifError) : 'Last attempt: none yet — tap the switch above') +
+    '</div></div>';
+
+  document.getElementById("nameInput").onblur = (e)=>{ state.profileName = e.target.value.trim(); save(); renderHeader(); };
+  document.getElementById("notifToggle").onchange = async (e)=>{
+    if (e.target.checked){ await enableNotifications(); }
+    else { state.notifEnabled = false; save(); renderSettings(); }
+  };
+  document.getElementById("reorderUrlInput").onblur = (e)=>{ state.reorderUrl = e.target.value.trim(); save(); renderAll(); };
+  document.getElementById("exportBtn").onclick = doExport;
+  document.getElementById("importFile").onchange = doImport;
+  document.getElementById("resetBtn").onclick = ()=>{
+    if (confirm("This erases all medicines and history on this phone. Continue?")){
+      localStorage.removeItem(STORE_KEY);
+      location.reload();
+    }
+  };
+}
+
+async function doExport(){
+  const data = JSON.stringify(state, null, 2);
+  const filename = "dose-backup-" + today() + ".json";
+  try{
+    const downloads = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (downloads){ await downloads.save({filename, data}); showToast("Backup saved."); return; }
+  }catch(e){}
+  showToast("Couldn't save a file here — try again from Settings.");
+}
+function doImport(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      state = Object.assign(defaultState(), parsed);
+      save(); renderAll();
+      showToast("Backup restored.");
+    }catch(err){ showToast("That file didn't look like a DOSE backup."); }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- add/edit medicine modal ---------- */
+function openMedForm(editId){
+  const med = editId ? state.meds.find(m=>m.id===editId) : null;
+  const draft = med ? Object.assign({}, med, {timesPerDay:(med.timesPerDay||[]).slice(), shape: med.shape||"tablet"}) : {
+    id: uid(), name:"", dosageText:"", color: SWATCHES[state.meds.length % SWATCHES.length], shape:"tablet",
+    timesPerDay:["08:00"], qtyPerDose:1, stock:30, reorderThreshold:7, notes:"", active:true, createdAt: Date.now()
+  };
+  const root = document.getElementById("modalRoot");
+  root.innerHTML =
+    '<div class="modal-back" id="modalBack"><div class="modal">' +
+      '<h2>'+(med? "Edit medicine" : "Add medicine")+'</h2>' +
+      '<div class="field"><label>Name</label><input type="text" id="f_name" value="'+escapeHtml(draft.name)+'" placeholder="e.g. Atorvastatin"></div>' +
+      '<div class="field"><label>Dosage / instructions</label><input type="text" id="f_dosage" value="'+escapeHtml(draft.dosageText)+'" placeholder="e.g. 20mg, 1 tablet with food"></div>' +
+      '<div class="field"><label>Times per day</label><div class="times-list" id="timesList"></div><button class="btn small ghost" id="addTimeBtn" style="margin-top:8px;">+ Add time</button></div>' +
+      '<div class="field row2"><div><label>Tablets per dose</label><input type="number" min="1" id="f_qty" value="'+draft.qtyPerDose+'"></div>' +
+      '<div><label>Current stock</label><input type="number" min="0" id="f_stock" value="'+draft.stock+'"></div></div>' +
+      '<div class="field"><label>Reorder alert when stock falls to</label><input type="number" min="0" id="f_threshold" value="'+draft.reorderThreshold+'"></div>' +
+      '<div class="field"><label>Reorder link (optional)</label><input type="text" id="f_reorderurl" value="'+escapeHtml(draft.reorderUrl||"")+'" placeholder="e.g. your GP’s Patient Access page — leave blank to use your default"></div>' +
+      '<div class="field"><label>Shape</label><div class="swatch-row" id="shapeRow"></div></div>' +
+      '<div class="field"><label>Colour</label><div class="swatch-row" id="swatchRow"></div></div>' +
+      '<div class="icon-preview"><span id="iconPreviewTile"></span><span>Preview</span></div>' +
+      '<div class="modal-actions">' +
+        (med? '<button class="btn danger" id="delBtn">Delete</button>' : '') +
+        '<button class="btn ghost" id="cancelBtn">Cancel</button>' +
+        '<button class="btn primary" id="saveBtn">Save</button>' +
+      '</div>' +
+    '</div></div>';
+
+  const timesList = document.getElementById("timesList");
+  function renderTimes(){
+    timesList.innerHTML = draft.timesPerDay.map((t,i)=>
+      '<span class="time-chip">'+fmtTime(t)+'<button data-i="'+i+'">✕</button></span>'
+    ).join("");
+    timesList.querySelectorAll("button").forEach(b=> b.onclick = ()=>{
+      draft.timesPerDay.splice(parseInt(b.dataset.i,10),1); renderTimes();
+    });
+  }
+  renderTimes();
+  document.getElementById("addTimeBtn").onclick = ()=>{
+    const inp = document.createElement("input");
+    inp.type = "time"; inp.value = "12:00";
+    inp.style.cssText = "background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--ink);padding:8px;border-radius:10px;";
+    const wrap = document.getElementById("timesList");
+    inp.onchange = ()=>{ if (inp.value){ draft.timesPerDay.push(inp.value); draft.timesPerDay.sort(); renderTimes(); } };
+    wrap.appendChild(inp); inp.focus();
+    if (inp.showPicker) { try{ inp.showPicker(); }catch(e){} }
+  };
+  function updatePreview(){
+    document.getElementById("iconPreviewTile").innerHTML = pillIconHtml(draft);
+  }
+  const shapeRow = document.getElementById("shapeRow");
+  shapeRow.innerHTML = SHAPES.map(s=> '<span class="shape-swatch'+(s.id===draft.shape?" sel":"")+'" data-s="'+s.id+'" title="'+s.label+'">'+medIconSvg(s.id,"currentColor")+'</span>').join("");
+  shapeRow.querySelectorAll(".shape-swatch").forEach(s=> s.onclick = ()=>{
+    draft.shape = s.dataset.s;
+    shapeRow.querySelectorAll(".shape-swatch").forEach(x=>x.classList.remove("sel"));
+    s.classList.add("sel");
+    updatePreview();
+  });
+  const swatchRow = document.getElementById("swatchRow");
+  swatchRow.innerHTML = SWATCHES.map(c=> '<span class="swatch'+(c===draft.color?" sel":"")+'" data-c="'+c+'" style="background:'+c+'"></span>').join("");
+  swatchRow.querySelectorAll(".swatch").forEach(s=> s.onclick = ()=>{
+    draft.color = s.dataset.c;
+    swatchRow.querySelectorAll(".swatch").forEach(x=>x.classList.remove("sel"));
+    s.classList.add("sel");
+    updatePreview();
+  });
+  updatePreview();
+
+  document.getElementById("cancelBtn").onclick = closeModal;
+  document.getElementById("modalBack").onclick = (e)=>{ if (e.target.id==="modalBack") closeModal(); };
+  if (med) document.getElementById("delBtn").onclick = ()=>{ closeModal(); deleteMed(med.id); };
+  document.getElementById("saveBtn").onclick = ()=>{
+    draft.name = document.getElementById("f_name").value.trim() || "Unnamed medicine";
+    draft.dosageText = document.getElementById("f_dosage").value.trim();
+    draft.qtyPerDose = Math.max(1, parseInt(document.getElementById("f_qty").value,10) || 1);
+    draft.stock = Math.max(0, parseInt(document.getElementById("f_stock").value,10) || 0);
+    draft.reorderThreshold = Math.max(0, parseInt(document.getElementById("f_threshold").value,10) || 0);
+    draft.reorderUrl = document.getElementById("f_reorderurl").value.trim();
+    if (!draft.timesPerDay.length) draft.timesPerDay = ["08:00"];
+    if (med){ Object.assign(med, draft); }
+    else { state.meds.push(draft); }
+    save(); closeModal(); renderAll();
+  };
+}
+function openRestockModal(medId){
+  const med = state.meds.find(m=>m.id===medId);
+  const root = document.getElementById("modalRoot");
+  root.innerHTML =
+    '<div class="modal-back" id="modalBack"><div class="modal">' +
+      '<h2>Log restock — '+escapeHtml(med.name)+'</h2>' +
+      '<div class="field"><label>Tablets added</label><input type="number" min="1" id="f_add" value="30"></div>' +
+      '<div class="modal-actions"><button class="btn ghost" id="cancelBtn">Cancel</button><button class="btn primary" id="saveBtn">Add to stock</button></div>' +
+    '</div></div>';
+  document.getElementById("cancelBtn").onclick = closeModal;
+  document.getElementById("modalBack").onclick = (e)=>{ if (e.target.id==="modalBack") closeModal(); };
+  document.getElementById("saveBtn").onclick = ()=>{
+    const add = Math.max(0, parseInt(document.getElementById("f_add").value,10)||0);
+    med.stock = (med.stock||0) + add;
+    save(); closeModal(); renderAll();
+    showToast("Added " + add + " to " + med.name + ".");
+  };
+}
+function closeModal(){ document.getElementById("modalRoot").innerHTML = ""; }
+
+/* ---------- tabs ---------- */
+function switchTab(tab){
+  activeTab = tab;
+  ["today","meds","inventory","progress","settings"].forEach(t=>{
+    document.getElementById("view-"+t).classList.toggle("hidden", t!==tab);
+  });
+  document.querySelectorAll(".tab-btn").forEach(b=> b.classList.toggle("active", b.dataset.tab===tab));
+  window.scrollTo(0,0);
+}
+
+function renderAll(){
+  renderHeader();
+  renderToday();
+  renderMeds();
+  renderInventory();
+  renderProgress();
+  renderSettings();
+  checkDueReminders();
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  load();
+  if (!state){
+    document.getElementById("setup").classList.remove("hidden");
+    document.getElementById("setupGo").onclick = ()=>{
+      state = defaultState();
+      state.profileName = document.getElementById("setupName").value.trim();
+      save();
+      document.getElementById("setup").classList.add("hidden");
+      startApp();
+    };
+    return;
+  }
+  startApp();
+}
+function startApp(){
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("tabbar").classList.remove("hidden");
+  document.querySelectorAll(".tab-btn").forEach(b=> b.onclick = ()=> switchTab(b.dataset.tab));
+  initSW();
+  renderAll();
+  setInterval(()=>{ renderHeader(); renderToday(); checkDueReminders(); }, 60000);
+  document.addEventListener("visibilitychange", ()=>{ if (!document.hidden){ renderAll(); } });
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+})();
+</script>
